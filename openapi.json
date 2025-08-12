@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "농업용 비료 및 날씨 API",
-    "description": "작물별 비료 사용량과 중기 기온 예보를 조회하는 API입니다.",
-    "version": "v2.0.0"
+    "title": "농업 전문가 API",
+    "description": "비료, 날씨, 병해충 정보를 조회하는 API입니다.",
+    "version": "v3.0.0"
   },
   "servers": [
     {
@@ -40,6 +40,33 @@
             "in": "query",
             "description": "조회할 지역의 코드. (예: 서울 11B10101, 대구 11H10701)",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/pest": {
+      "get": {
+        "description": "작물 이름이나 병해충 이름으로 관련 병 정보를 검색합니다.",
+        "summary": "병해충 정보 검색",
+        "operationId": "getPestInfo",
+        "parameters": [
+          {
+            "name": "cropName",
+            "in": "query",
+            "description": "정보를 찾고 싶은 작물 이름. (예: 고추)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pestName",
+            "in": "query",
+            "description": "정보를 찾고 싶은 병해충 이름. (예: 탄저병)",
+            "required": false,
             "schema": {
               "type": "string"
             }
