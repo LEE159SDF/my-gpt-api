@@ -5,81 +5,82 @@ const { XMLParser } = require('fast-xml-parser');
 const dotenv = require('dotenv');
 
 // 2. 도구들을 사용할 수 있게 준비시킵니다.
-dotenv.config(); // .env 파일을 읽어서 API 키를 준비시킵니다.
-const app = express(); // express 서버를 시작합니다.
-const port = 3000; // 우리 서버는 3000번 문을 이용합니다.
-const parser = new XMLParser(); // XML 번역기를 준비시킵니다.
+dotenv.config();
+const app = express();
+const port = 3000;
+const parser = new XMLParser(); // 비료 API는 XML을 사용하므로 그대로 둡니다.
 
 // 3. API 키를 .env 파일에서 안전하게 가져옵니다.
 const apiKey = process.env.API_KEY;
 
-// 4. 비료 정보 찾아주는 기능 만들기
+// 4. 비료 정보 찾아주는 기능 (기존과 동일)
 app.get('/api/fertilizer', async (req, res) => {
     const { cropCode } = req.query;
-
     if (!cropCode) {
         return res.status(400).json({ error: '작물 코드를 입력해주세요.' });
     }
-    
     const endpoint = 'https://apis.data.go.kr/1390802/SoilEnviron/FrtlzrStdUse/getSoilFrtlzrQyList';
     const requestUrl = `${endpoint}?serviceKey=${apiKey}&fstd_Crop_Code=${cropCode}`;
-
     try {
         const response = await axios.get(requestUrl);
-
-        // ★★★★★ 디버깅을 위해 정부로부터 받은 응답을 그대로 로그에 출력합니다. ★★★★★
-        console.log("정부 API로부터 받은 실제 응답:", response.data);
-
         const jsonData = parser.parse(response.data);
-        
-        // 에러가 발생하면 jsonData.response가 없을 수 있으므로 확인합니다.
         if (jsonData.response && jsonData.response.body) {
             const item = jsonData.response.body.items.item;
             res.json(item);
         } else {
-            // 정부 API가 에러를 보냈을 경우, 그 내용을 그대로 출력합니다.
-            console.error("정부 API 에러:", jsonData);
-            res.status(500).json({ error: '정부 API로부터 유효한 응답을 받지 못했습니다.' });
+            res.status(500).json({ error: '정부 비료 API로부터 유효한 응답을 받지 못했습니다.' });
         }
-
     } catch (error) {
-        console.error('API 요청 중 에러 발생:', error.message);
-        res.status(500).json({ error: '서버에서 데이터를 가져오는 데 실패했습니다.' });
+        res.status(500).json({ error: '비료 서버에서 데이터를 가져오는 데 실패했습니다.' });
     }
 });
 
-// 5. 날씨 정보 찾아주는 기능 만들기
+// 5. ★★★ 새로운 날씨 정보 찾아주는 기능 ★★★
 app.get('/api/weather', async (req, res) => {
-    const { spotCode, date } = req.query;
-
-    if (!spotCode || !date) {
-        return res.status(400).json({ error: '관측소 코드와 날짜를 모두 입력해주세요.' });
+    const { regId } = req.query; // '지역 코드'를 받습니다.
+    if (!regId) {
+        return res.status(400).json({ error: '지역 코드(regId)를 입력해주세요.' });
     }
 
-    const endpoint = 'http://apis.data.go.kr/1390802/AgriWeather/WeatherObsrInfo/GnrlWeather/getWeatherTimeList';
-    const requestUrl = `${endpoint}?serviceKey=${apiKey}&Page_No=1&Page_Size=30&date_Time=${date}&obsr_Spot_Code=${spotCode}`;
+    // 발표 시각(tmFc)을 자동으로 계산합니다. (06시, 18시)
+    const now = new Date();
+    let tmFc = '';
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = now.getHours();
+
+    if (hours < 6) {
+        // 06시 이전이면, 어제 18시 발표 자료를 요청
+        const yesterday = new Date(now.setDate(now.getDate() - 1));
+        const y_year = yesterday.getFullYear();
+        const y_month = String(yesterday.getMonth() + 1).padStart(2, '0');
+        const y_day = String(yesterday.getDate()).padStart(2, '0');
+        tmFc = `${y_year}${y_month}${y_day}1800`;
+    } else if (hours >= 6 && hours < 18) {
+        // 06시와 18시 사이면, 오늘 06시 발표 자료
+        tmFc = `${year}${month}${day}0600`;
+    } else {
+        // 18시 이후면, 오늘 18시 발표 자료
+        tmFc = `${year}${month}${day}1800`;
+    }
+
+    // 기상청 중기기온조회 API 주소
+    const endpoint = 'http://apis.data.go.kr/1360000/MidFcstInfoService/getMidTa';
+    // JSON 형식으로 데이터를 요청합니다.
+    const requestUrl = `${endpoint}?serviceKey=${apiKey}&regId=${regId}&tmFc=${tmFc}&dataType=JSON`;
 
     try {
         const response = await axios.get(requestUrl);
-
-        // ★★★★★ 디버깅을 위해 정부로부터 받은 응답을 그대로 로그에 출력합니다. ★★★★★
-        console.log("정부 API로부터 받은 실제 응답 (날씨):", response.data);
-
-        const jsonData = parser.parse(response.data);
-        
-        if (jsonData.response && jsonData.response.body) {
-            const items = jsonData.response.body.items;
-            res.json(items);
-        } else {
-            console.error("정부 API 에러 (날씨):", jsonData);
-            res.status(500).json({ error: '정부 API로부터 유효한 응답을 받지 못했습니다.' });
-        }
-        
+        // JSON으로 받았으므로 바로 사용합니다.
+        const items = response.data.response.body.items;
+        res.json(items);
     } catch (error) {
-        console.error('API 요청 중 에러 발생 (날씨):', error.message);
-        res.status(500).json({ error: '서버에서 데이터를 가져오는 데 실패했습니다.' });
+        console.error("날씨 API 에러:", error.message);
+        res.status(500).json({ error: '기상청 서버에서 데이터를 가져오는 데 실패했습니다.' });
     }
 });
+
 
 // 6. 서버 실행
 app.listen(port, () => {

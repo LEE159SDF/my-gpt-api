@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "농약 비료 처방 GPT용 API",
-    "description": "작물별 비료 표준 사용량과 농업 기상 데이터를 조회하는 API입니다.",
-    "version": "v1.0.0"
+    "title": "농업용 비료 및 날씨 API",
+    "description": "작물별 비료 사용량과 중기 기온 예보를 조회하는 API입니다.",
+    "version": "v2.0.0"
   },
   "servers": [
     {
@@ -31,23 +31,14 @@
     },
     "/api/weather": {
       "get": {
-        "description": "관측소 코드와 날짜(YYYY-MM-DD)를 받아서 해당 지역의 시간별 날씨 정보를 알려줍니다.",
-        "summary": "날씨 정보 조회",
-        "operationId": "getWeatherInfo",
+        "description": "지역 코드를 받아서 3~10일 후의 최저/최고 기온 예보를 알려줍니다.",
+        "summary": "중기 기온 예보 조회",
+        "operationId": "getWeatherForecast",
         "parameters": [
           {
-            "name": "spotCode",
+            "name": "regId",
             "in": "query",
-            "description": "조회할 지역의 관측소 코드. (예: 가평군 가평읍 477802A001)",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "date",
-            "in": "query",
-            "description": "조회할 날짜 (YYYY-MM-DD 형식).",
+            "description": "조회할 지역의 코드. (예: 서울 11B10101, 대구 11H10701)",
             "required": true,
             "schema": {
               "type": "string"
