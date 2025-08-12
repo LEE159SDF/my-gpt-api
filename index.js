@@ -61,7 +61,7 @@ app.get('/api/weather', async (req, res) => {
     }
 });
 
-// 6. ★★★ 새로 추가한 병해충 정보 찾아주는 기능 ★★★
+// 6. ★★★ 수정된 병해충 정보 찾아주는 기능 ★★★
 app.get('/api/pest', async (req, res) => {
     const { cropName, pestName } = req.query; // 작물 이름과 병해충 이름을 받습니다.
     if (!cropName && !pestName) {
@@ -70,14 +70,17 @@ app.get('/api/pest', async (req, res) => {
 
     // 병해충 검색 API 주소 (SVC01: 병 검색 서비스)
     const endpoint = 'http://ncpms.rda.go.kr/npmsAPI/service';
-    // JSON 형식으로 데이터를 요청합니다.
-    const requestUrl = `${endpoint}?apiKey=${pestApiKey}&serviceCode=SVC01&serviceType=AA003&cropName=${encodeURI(cropName || '')}&sickNameKor=${encodeURI(pestName || '')}`;
+    // ★★★★★ 서비스 타입을 XML(AA001)로 변경 ★★★★★
+    const requestUrl = `${endpoint}?apiKey=${pestApiKey}&serviceCode=SVC01&serviceType=AA001&cropName=${encodeURI(cropName || '')}&sickNameKor=${encodeURI(pestName || '')}`;
 
     try {
         const response = await axios.get(requestUrl);
-        // 이 API는 XML만 지원하므로 파서가 필요합니다.
+        // XML으로 받았으므로, XML 파서를 사용합니다.
         const jsonData = parser.parse(response.data);
-        res.json(jsonData.service.list);
+
+        // XML 응답 구조에 맞게 데이터를 추출합니다.
+        const list = jsonData.service.list;
+        res.json(list);
     } catch (error) {
         console.error("병해충 API 에러:", error.message);
         res.status(500).json({ error: '병해충 서버에서 데이터를 가져오는 데 실패했습니다.' });
