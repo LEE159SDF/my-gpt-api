@@ -1,0 +1,60 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "농약 비료 처방 GPT용 API",
+    "description": "작물별 비료 표준 사용량과 농업 기상 데이터를 조회하는 API입니다.",
+    "version": "v1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://gpt-soil-tras.vercel.app"
+    }
+  ],
+  "paths": {
+    "/api/fertilizer": {
+      "get": {
+        "description": "작물 코드를 받아서 해당 작물의 표준 비료 사용량을 알려줍니다.",
+        "summary": "비료 정보 조회",
+        "operationId": "getFertilizerInfo",
+        "parameters": [
+          {
+            "name": "cropCode",
+            "in": "query",
+            "description": "조회할 작물의 코드. (예: 벼는 00001)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/api/weather": {
+      "get": {
+        "description": "관측소 코드와 날짜(YYYY-MM-DD)를 받아서 해당 지역의 시간별 날씨 정보를 알려줍니다.",
+        "summary": "날씨 정보 조회",
+        "operationId": "getWeatherInfo",
+        "parameters": [
+          {
+            "name": "spotCode",
+            "in": "query",
+            "description": "조회할 지역의 관측소 코드. (예: 가평군 가평읍 477802A001)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "description": "조회할 날짜 (YYYY-MM-DD 형식).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
